@@ -30,7 +30,10 @@ class Module:
             # print(gradients)
             if (isinstance(layer, Layer.BaseActivationFunc)):
                 continue
-            self.params[layer.name] = {"gradient": {}}
+            self.params[layer.name] = {
+                "layer": layer,
+                "gradient": {}
+            }
             for key in gradients.keys():
                 self.params[layer.name]["gradient"][key] = gradients[key]
 

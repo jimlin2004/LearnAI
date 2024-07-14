@@ -9,8 +9,12 @@ class Optimizer:
     def step(self):
         pass
     
-class SGD(Optimizer):
+class GD(Optimizer):
     def __init__(self, params, lr):
         super().__init__(params, lr)
     def step(self):
-        print(self._params)
+        for layername, mp in self._params.items():
+            gradient = mp["gradient"]
+            layer = mp["layer"]
+            layer.weight -= self._lr * gradient["gw"]
+            layer.bias -= self._lr * gradient["gb"]

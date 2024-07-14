@@ -51,7 +51,6 @@ class ReLU(BaseActivationFunc):
     def backward(self):
         dz = self.outTensorPtr.error
         newdz = dz * self.derivative(self.inTensorPtr._data)
-        # print(newdz)
         self.inTensorPtr.setError(newdz)
         return None
         
@@ -61,15 +60,16 @@ class ReLU(BaseActivationFunc):
 class Linear(BaseLayer):
     def __init__(self, inDim: int, outDim: int):
         super().__init__()
-        self.weight = np.random.rand(inDim, outDim)
-        self.bias = np.random.rand(1, outDim)
+        # self.weight = np.random.rand(inDim, outDim)
+        self.weight = np.random.uniform(-1, 1, size = [inDim, outDim])
+        # self.bias = np.random.rand(1, outDim)
+        self.bias = np.random.uniform(-1, 1, size = [1, outDim])
     def forward(self, x: typing.Union[Tensor.Tensor, np.ndarray]) -> Tensor.Tensor:
         x = self._processInput(x)
         self._order = x._order
         # print(f"forward: {self._order}")
         _x = np.dot(x._data, self.weight) + self.bias
         self.out = self._processOutput(_x, self._order + 1)
-        
         # print(f"IN: {self.inTensorPtr._data}")
         # print(f"OUT: {self.outTensorPtr._data}")
         return self.out
@@ -77,10 +77,10 @@ class Linear(BaseLayer):
         # 計算gw, gb
         dz = self.outTensorPtr.error
         gradients = {}
-        gradients["gw"] = np.dot(self.inTensorPtr._data.T, dz)
-        gradients["gb"] = np.sum(dz, axis = 0, keepdims = True)
+        gradients["gw"] = np.dot(self.inTensorPtr._data.T, dz) / 100
+        gradients["gb"] = np.sum(dz, axis = 0, keepdims = True) / 100
         self.inTensorPtr.setError(np.dot(dz, self.weight.T))
         
-        self.weight -= 0.01 * gradients["gw"]
-        self.bias -= 0.01 * gradients["gb"]
+        # self.weight -= 0.01 * gradients["gw"]
+        # self.bias -= 0.01 * gradients["gb"]
         return gradients

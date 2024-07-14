@@ -26,4 +26,4 @@ class MSE(LossFunc):
         if (isinstance(target, Tensor.Tensor)):
             target = target._data
         loss = np.mean(np.square(pred - target))
-        return Loss(loss, (pred - target) / target.shape[0])
+        return Loss(loss, (pred - target) * 2)
