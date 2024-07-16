@@ -20,9 +20,8 @@ class Env:
         agent.ep_rewards.clear()
         agent.log_probs.clear()
         while (not done):
-            self.env.render()
-            # state = np.array(state[0])
-            state = torch.from_numpy(state).to(self.device)
+            # self.env.render()
+            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
             action = agent.selectAction(state)
             state_next, reward, done, truncated, info = self.env.step(action)
             totalReward += reward
@@ -33,8 +32,8 @@ class Env:
             if (totalReward >= maxScoreLimit):
                 break
             state = state_next
-        discountedAndNormalizedRewards = agent.getDiscountedAndNormalizedRewards()
-        loss = agent.train(discountedAndNormalizedRewards)
+        discountedAndStandardizedRewards = agent.getDiscountedAndStandardizedRewards()
+        loss = agent.train(discountedAndStandardizedRewards)
         self.history["reward"].append(totalReward)
         self.history["loss"].append(loss)
         return loss, totalReward
