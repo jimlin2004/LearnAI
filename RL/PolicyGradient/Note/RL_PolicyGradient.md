@@ -71,6 +71,20 @@ Policy gradient是on policy的訓練方式(只能從當前的policy $\pi$學習)
 
 上面有提到policy gradient很像是在處理classification problem，可以將遊戲的state當作物件辨識的object，NN回答應該做什麼action(如左移、右移)，這個回答的action就像是classification problem回答object是哪一個class，如果當作是classification problem解決的話，minimize cross entropy的過程會是$\frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}\nabla\ln p_\theta(a_t^n|s_t^n)$，回到RL問題其實就只要記得在loss(也就是$\ln p_\theta(a_t^n|s_t^n)$)要記得乘上$R(\tau^n)$，變成$\frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}R(\tau^n)\nabla\ln p_\theta(a_t^n|s_t^n)$。
 
+### 實作tip
+
+#### Add a baseline
+> 用處: 解決遊戲的reward總是正的情況
+
+$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}R(\tau^n)\nabla\ln(p_\theta(a_t^n|s_t^n))$的式子直覺上解釋是如果reward是正的那就要提升發生的機率，反之reward是負的就要減少發生機率，但若此時遊戲不可能有負的reward發生時如乒乓遊戲只有0 ~ 21分，假設現在只有2、3分，但套入公式我們還是會提升它發生的機率，想想可能覺得怪，但在理想中可能沒有問題，以下圖說明:
+![Baseline說明1](./Baseline說明1.jpg)
+圖片取自 李宏毅老師教學影片
+假設現在NN只有三種action，遊戲都是正reward，但每一種action得到的reward不一樣，所以即使大家都機率上升，但上升的程度不一樣，因此在經過處理(如normalize)後，因為NN輸出的是機率，每個action的機率相加要是1，所以上升少的就是機率會下降，上升多的機率會上升。
+![Baseline說明2](./Baseline說明2.jpg)
+但是實作上不可能所有trajectory都探索一遍，我們用sample的方式去逼近，但sample就是機率性的行為，假設一樣NN只有3個action，遊戲只有正reward，action B、C都有sample到，但action A沒有，如此結果B、C的reward一定是正的，A沒有reward，經過處理後會發生由於A的reward是0，處理過後會下降，但action A可能不是不好的action，只是沒被sample到，這就會有問題了。
+解決方法就是在公式中加一個baseline，變$$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(R(\tau^n) - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$減掉baseline可以使雖然遊戲的reward都是正的，只要該action的reward低於baseline，算起來就會是負的reward，機就會下降了，反之action reward大於baseline機率仍會上升。
+baseline怎麼訂，就很自由了，可以自己設計，李宏毅提供一個可以用的baseline就是 $b \approx E[R(\tau)]$，也就是$R(\tau)$的平均值。
+
 ## 實驗-Policy Gradient用於OpenAI gym CartPole-v1
 
 先定義Policy NN
@@ -285,3 +299,31 @@ if __name__ == "__main__":
     plt.plot(list(range(1, len(env.history["reward"]) + 1)), env.history["reward"])
     plt.show()
 ```
+
+### 實驗結果
+
+lr = 0.01
+![實驗結果1](./reward_收斂不好.svg)
+lr = 0.005
+![實驗結果2](./reward_收斂好.svg)
+
+實驗結果可以發現到其實有學習，也能夠達到很多次1000分(設定最高分的上限)，但是可以觀察到即使很早就已經達到1000分，卻在後面訓練時可能發生分數暴跌的情況，到此我有幾個想法:
+1. 網路上說純policy gradient收斂性不好，可能指的就像是實驗結果這樣，也就是policy gradient本身的缺點，甚至是所謂的catastrophic forgetting。
+2. 由於在訓練過程中的selectAction是用distribution再sample的方式選動作，這代表選動作時具有隨機性，加上cartpole遊戲中只有兩個動作，且移動步長也不是連續實數，使得distribution再sample可能抽到錯的action。
+
+### 驗證實驗結果
+
+先實驗訓練出來的NN是不是垃圾:
+lr = 0.005，取最大機率動作
+![實驗結果3](./evaluation_maxAction.gif)
+lr = 0.005，取機率分布sample動作
+![實驗結果4](./evaluation_distribution.gif)
+lr = 0.01，收斂不好
+![實驗結果5](./evaluation_收斂很差.gif)
+由上方實驗的結果可以發現到lr = 0.01且最後分數暴跌的NN真的看不出訓練的效果 ~~(就是垃圾)~~ 。
+對於最後仍達到1000分且lr = 0.005 NN，在驗證時可以發現確實NN有訓練好而且穩健，因此我嘗試了兩種不同的selectAction方式，也就是只取最大機率的action與機率分布sample action兩種，發現其實兩種方式都可以穩定的到1000分，唯一比較不同的是distribution sample的方式似乎比較
+常有移動的現象，反觀取最大機率的方法更穩健些，基本不太移動。
+而這實驗或許可說明實驗結果的假設二是錯的，因為兩種方法NN都有辦法將火柴穩住，且用機率分布的方式可以增加探索的動力，有助於訓練。
+經過許多次實驗還是會發生與上方折線圖一樣在高分後突然跌到谷底的現象，現在我認為可能是lr的調整問題或是真的會發生catastrophic forgetting。
+
+原始碼: [Github](https://github.com/jimlin2004/LearnAI/tree/main/RL/PolicyGradient)

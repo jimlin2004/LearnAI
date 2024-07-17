@@ -4,8 +4,8 @@ import numpy as np
 
 class Agent:
     def __init__(self, device, stateDim, actionDim):
-        self.lr = 0.01
-        self.gamma = 0.99
+        self.lr = 0.005
+        self.gamma = 0.95
         self.log_probs = []
         self.ep_rewards = []
         self.policy = Model.Model(stateDim, actionDim).to(device)
@@ -19,6 +19,13 @@ class Agent:
         log_prob = distri.log_prob(action)
         self.log_probs.append(log_prob)
         return action.item()
+    def selectAction_evaluation(self, state):
+        self.policy.train(False)
+        actionProb = self.policy(state)
+        return torch.argmax(actionProb).item()
+        # distri = torch.distributions.Categorical(actionProb)
+        # action = distri.sample()
+        # return action.item()
     
     def getDiscountedAndStandardizedRewards(self):
         discountedRewards = [0] * len(self.ep_rewards)
@@ -42,4 +49,7 @@ class Agent:
         return policyLoss.item()
     
     def save(self, path: str):
-        torch.save(self.policy.state_dict, path)
+        torch.save(self.policy.state_dict(), path)
+    def loadModel(self, path: str):
+        loaded = torch.load(path)
+        self.policy.load_state_dict(loaded)
