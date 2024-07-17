@@ -2,8 +2,8 @@ import numpy as np
 
 class Linear():
     def __init__(self, inDim: int, outDim: int):
-        self.weight = np.random.rand(inDim, outDim)
-        self.bias = np.random.rand(1, outDim)
+        self.weight = np.random.uniform(-1, 1, size = [inDim, outDim])
+        self.bias = np.random.uniform(-1, 1, size = [1, outDim])
     def __call__(self, x: np.ndarray):
         out = x.dot(self.weight) + self.bias
         return out
