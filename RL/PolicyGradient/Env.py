@@ -1,7 +1,6 @@
 import gym
 import Agent
 import torch
-import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from matplotlib import animation

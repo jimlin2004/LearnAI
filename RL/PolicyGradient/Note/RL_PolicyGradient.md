@@ -96,18 +96,14 @@ import torch
 class Model(torch.nn.Module):
     def __init__(self, inDim, outDim):
         super().__init__()
-        self.l1 = torch.nn.Linear(inDim, 32)
-        self.relu1 = torch.nn.ReLU()
-        self.l2 = torch.nn.Linear(32, 32)
-        self.relu2 = torch.nn.ReLU()
-        self.l3 = torch.nn.Linear(32, outDim)
-        self.allActionProb = torch.nn.Softmax(dim = -1)
+        self.l1 = torch.nn.Linear(inDim, 8)
+        self.relu = torch.nn.ReLU()
+        self.l2 = torch.nn.Linear(8, outDim)
+        self.allActionProb = torch.nn.Softmax(dim = 1)
     def forward(self, x):
         out = self.l1(x)
-        out = self.relu1(out)
+        out = self.relu(out)
         out = self.l2(out)
-        out = self.relu2(out)
-        out = self.l3(out)
         out = self.allActionProb(out)
         return out
 ```
@@ -124,7 +120,7 @@ import numpy as np
 class Agent:
     def __init__(self, device, stateDim, actionDim):
         self.lr = 0.01
-        self.gamma = 0.99
+        self.gamma = 0.95
         self.log_probs = []
         self.ep_rewards = []
         self.policy = Model.Model(stateDim, actionDim).to(device)
@@ -138,6 +134,10 @@ class Agent:
         log_prob = distri.log_prob(action)
         self.log_probs.append(log_prob)
         return action.item()
+    def selectAction_evaluation(self, state):
+        self.policy.train(False)
+        actionProb = self.policy(state)
+        return torch.argmax(actionProb).item()
     
     def getDiscountedAndStandardizedRewards(self):
         discountedRewards = [0] * len(self.ep_rewards)
@@ -146,21 +146,25 @@ class Agent:
             curr = curr * self.gamma + self.ep_rewards[i]
             discountedRewards[i] = curr
         discountedRewards = torch.FloatTensor(discountedRewards)
-        discountedRewards = (discountedRewards - discountedRewards.mean()) / (discountedRewards.std() + 1e-9)
+        discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
         return discountedRewards
     
     def train(self, discountedAndStandardizedRewards: torch.Tensor):
         policyLoss = []
         for log_prob, R in zip(self.log_probs, discountedAndStandardizedRewards):
             policyLoss.append(-log_prob * R)
-        policyLoss = torch.cat(policyLoss).sum().to(self.device)
+
         self.optimizer.zero_grad()
+        policyLoss = torch.cat(policyLoss).mean().to(self.device)
         policyLoss.backward()
         self.optimizer.step()
         return policyLoss.item()
     
     def save(self, path: str):
-        torch.save(self.policy.state_dict, path)
+        torch.save(self.policy.state_dict(), path)
+    def loadModel(self, path: str):
+        loaded = torch.load(path)
+        self.policy.load_state_dict(loaded)
 ```
 
 細節討論:
@@ -185,19 +189,20 @@ def getDiscountedAndStandardizedRewards(self):
         curr = curr * self.gamma + self.ep_rewards[i]
         discountedRewards[i] = curr
     discountedRewards = torch.FloatTensor(discountedRewards)
-    discountedRewards = (discountedRewards - discountedRewards.mean()) / (discountedRewards.std() + 1e-9)
+    discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
     return discountedRewards
 ```
 
-這一步是在一次episode結束之後要計算該次episode每個時間點的reward，而隨著時間的推進，離現在越遠的reward的影響應該要降低，所以記得倒著迭代episode的reward，因為最新的reward在最後面，用$\gamma$做discount($\gamma$可設0.99或0.95之類接近1的數)，最後將discounted reward做標準化(Standardized)，標準化與歸一化對於gradient based的算法有加速以及穩定收斂的功效，但實際數學原理本人尚未明瞭，然而在一些實驗中有證明對reward標準化確實可以幫助收斂。
+這一步是在一次episode結束之後要計算該次episode每個時間點的reward，而隨著時間的推進，離現在越遠的reward的影響應該要降低，所以記得倒著迭代episode的reward，因為最新的reward在最後面，用$\gamma$做discount($\gamma$可設0.99或0.95之類接近1的數)，最後將discounted reward減去一半(當作baseline)。
 
 ```py
 def train(self, discountedAndStandardizedRewards: torch.Tensor):
     policyLoss = []
     for log_prob, R in zip(self.log_probs, discountedAndStandardizedRewards):
         policyLoss.append(-log_prob * R)
-    policyLoss = torch.cat(policyLoss).sum().to(self.device)
+
     self.optimizer.zero_grad()
+    policyLoss = torch.cat(policyLoss).mean().to(self.device)
     policyLoss.backward()
     self.optimizer.step()
     return policyLoss.item()
@@ -218,8 +223,19 @@ for log_prob, R in zip(self.log_probs, discountedAndStandardizedRewards):
 import gym
 import Agent
 import torch
-import numpy as np
 import csv
+import matplotlib.pyplot as plt
+from matplotlib import animation
+
+def saveFramesToGif(frames, gifPath):
+    patch = plt.imshow(frames[0])
+    plt.axis("off")
+    
+    def animate(i):
+        patch.set_data(frames[i])
+    
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames = len(frames))
+    anim.save(gifPath, writer = "ffmpeg", fps = 30)
 
 class Env:
     def __init__(self, device, gameName: str, renderMode = "human"):
@@ -254,11 +270,36 @@ class Env:
         self.history["reward"].append(totalReward)
         self.history["loss"].append(loss)
         return loss, totalReward
+    
+    def runOneEpisode_evaluation(self, maxScoreLimit: float, agent: Agent.Agent, gifPath: str):
+        state = self.env.reset()[0]
+        totalReward = 0
+        done = False
+        frames = []
+        while (not done):
+            frames.append(self.env.render())
+            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            action = agent.selectAction_evaluation(state)
+            state_next, reward, done, truncated, info = self.env.step(action)
+            totalReward += reward
+            if (done):
+                break
+            if (totalReward >= maxScoreLimit):
+                break
+            state = state_next
+        saveFramesToGif(frames, gifPath)
+        return totalReward
         
     def train(self, iterNum, maxScoreLimit: float, agent: Agent.Agent):
         for episode in range(1, iterNum + 1, 1):
             loss, reward = self.runOneEpisode(maxScoreLimit, agent)
             print("|Episode: %4d|Loss: %5.6f|Reward: %5.6f" % (episode, loss, reward))
+        self.env.close()
+        
+    def evaluation(self, iterNum, maxScoreLimit: float, agent: Agent.Agent):
+        for episode in range(1, iterNum + 1, 1):
+            reward = self.runOneEpisode_evaluation(maxScoreLimit, agent)
+            print("|Episode: %4d|Reward: %5.6f" % (episode, reward))
         self.env.close()
     
     def log(self, path: str):
@@ -293,7 +334,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     env = Env.Env(device, "CartPole-v1", "rgb_array")
     agent = Agent.Agent(device, env.stateDim, env.actionDim)
-    env.train(500, 1000, agent)
+    env.train(1000, 1000, agent)
     agent.save("./policyGradientModel.pth")
     env.log("./history")
     plt.plot(list(range(1, len(env.history["reward"]) + 1)), env.history["reward"])
@@ -302,28 +343,10 @@ if __name__ == "__main__":
 
 ### 實驗結果
 
-lr = 0.01
-![實驗結果1](./reward_收斂不好.svg)
-lr = 0.005
-![實驗結果2](./reward_收斂好.svg)
-
-實驗結果可以發現到其實有學習，也能夠達到很多次1000分(設定最高分的上限)，但是可以觀察到即使很早就已經達到1000分，卻在後面訓練時可能發生分數暴跌的情況，到此我有幾個想法:
-1. 網路上說純policy gradient收斂性不好，可能指的就像是實驗結果這樣，也就是policy gradient本身的缺點，甚至是所謂的catastrophic forgetting。
-2. 由於在訓練過程中的selectAction是用distribution再sample的方式選動作，這代表選動作時具有隨機性，加上cartpole遊戲中只有兩個動作，且移動步長也不是連續實數，使得distribution再sample可能抽到錯的action。
-
-### 驗證實驗結果
-
-先實驗訓練出來的NN是不是垃圾:
-lr = 0.005，取最大機率動作
-![實驗結果3](./evaluation_maxAction.gif)
-lr = 0.005，取機率分布sample動作
-![實驗結果4](./evaluation_distribution.gif)
-lr = 0.01，收斂不好
-![實驗結果5](./evaluation_收斂很差.gif)
-由上方實驗的結果可以發現到lr = 0.01且最後分數暴跌的NN真的看不出訓練的效果 ~~(就是垃圾)~~ 。
-對於最後仍達到1000分且lr = 0.005 NN，在驗證時可以發現確實NN有訓練好而且穩健，因此我嘗試了兩種不同的selectAction方式，也就是只取最大機率的action與機率分布sample action兩種，發現其實兩種方式都可以穩定的到1000分，唯一比較不同的是distribution sample的方式似乎比較
-常有移動的現象，反觀取最大機率的方法更穩健些，基本不太移動。
-而這實驗或許可說明實驗結果的假設二是錯的，因為兩種方法NN都有辦法將火柴穩住，且用機率分布的方式可以增加探索的動力，有助於訓練。
-經過許多次實驗還是會發生與上方折線圖一樣在高分後突然跌到谷底的現象，現在我認為可能是lr的調整問題或是真的會發生catastrophic forgetting。
-
-原始碼: [Github](https://github.com/jimlin2004/LearnAI/tree/main/RL/PolicyGradient)
+episode = 500
+![reward 500次](./reward_500次.svg)
+episode = 1000
+![reward 1000次](./reward_1000次.svg)
+可以觀察到policy gradient的訓練方法有學習，可以達到最高設定的1000分，而訓練過程中也能發現到即使已經保持在1000分一段時間卻會發生突然下降的情況，代表著訓練不太穩定，但以趨勢來看reward是呈現上升。
+![驗證](./1000次實驗結果.gif)
+這是訓練1000個episode的model實際的遊玩過程，可以發現到NN已經學會如何穩定住火柴，也學會如何利用移動來解決傾角變大的情況。

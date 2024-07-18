@@ -4,7 +4,7 @@ import numpy as np
 
 class Agent:
     def __init__(self, device, stateDim, actionDim):
-        self.lr = 0.005
+        self.lr = 0.01
         self.gamma = 0.95
         self.log_probs = []
         self.ep_rewards = []
@@ -23,9 +23,6 @@ class Agent:
         self.policy.train(False)
         actionProb = self.policy(state)
         return torch.argmax(actionProb).item()
-        # distri = torch.distributions.Categorical(actionProb)
-        # action = distri.sample()
-        # return action.item()
     
     def getDiscountedAndStandardizedRewards(self):
         discountedRewards = [0] * len(self.ep_rewards)
@@ -34,7 +31,8 @@ class Agent:
             curr = curr * self.gamma + self.ep_rewards[i]
             discountedRewards[i] = curr
         discountedRewards = torch.FloatTensor(discountedRewards)
-        discountedRewards = (discountedRewards - discountedRewards.mean()) / (discountedRewards.std() + 1e-9)
+        # discountedRewards = (discountedRewards - discountedRewards.mean()) / (discountedRewards.std() + 1e-9)
+        discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
         return discountedRewards
     
     def train(self, discountedAndStandardizedRewards: torch.Tensor):
@@ -42,8 +40,9 @@ class Agent:
         policyLoss = []
         for log_prob, R in zip(self.log_probs, discountedAndStandardizedRewards):
             policyLoss.append(-log_prob * R)
-        policyLoss = torch.cat(policyLoss).sum().to(self.device)
+
         self.optimizer.zero_grad()
+        policyLoss = torch.cat(policyLoss).mean().to(self.device)
         policyLoss.backward()
         self.optimizer.step()
         return policyLoss.item()
