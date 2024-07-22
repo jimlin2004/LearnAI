@@ -16,5 +16,15 @@ class PPO:
     def selectAction(self, state):
         prob = self.actor(state)
         distribution = torch.distributions.Categorical(prob)
-        action = distribution.sample().item()
-        return action
+        action = distribution.sample()
+        return action.item(), distribution.log_prob(action)
+    
+    def save(self):
+        torch.save(self.actor.state_dict(), "actorModel.pth")
+        torch.save(self.critic.state_dict(), "criticModel.pth")
+        
+    def load(self, actorModelPath: str, criticModelPath: str):
+        loaded = torch.load(actorModelPath)
+        self.actor.load_state_dict(loaded)
+        loaded = torch.load(criticModelPath)
+        self.critic.load_state_dict(loaded)

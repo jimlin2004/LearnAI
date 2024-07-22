@@ -1,2 +1,3 @@
 https://github.com/LiSir-HIT/Reinforcement-Learning/blob/main/Model/6.%20PPO_Discrete/run_this.py
 https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/12_Proximal_Policy_Optimization/simply_PPO.py
+https://github.com/ericyangyu/PPO-for-Beginners/blob/master/ppo.py

@@ -7,5 +7,5 @@ if __name__ == "__main__":
     
     env = Env(device, "CartPole-v1", "rgb_array")
     agent = PPO(env.stateDim, env.actionDim, device)
-    env.train(agent, 102400)
-    agent.save()
+    agent.load("loadModel/actorModel.pth", "loadModel/criticModel.pth")
+    env.evaluate(agent)
