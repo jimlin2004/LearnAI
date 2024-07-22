@@ -31,7 +31,7 @@ $$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}\underbra
 
 到這邊已經知道要調整的梯度公式為:
 $$\begin{align}
-    &\nabla\bar{R}_\theta\nonumber
+    &\nabla\bar{R}_\theta\nonumber\\
     &=E_{(s_t,a_t) \sim p_\theta}[A^\theta(s_t,a_t)\nabla\ln p_\theta(a_t^n|s_t^n)]\\
     &= E_{(s_t,a_t) \sim p_{\theta'}}[\frac{p_\theta(s_t,a_t)}{p_{\theta'}(s_t,a_t)} A^{\theta'}(s_t,a_t)\nabla\ln p_\theta(a_t^n|s_t^n)]\\
     &= E_{(s_t,a_t) \sim p_{\theta'}}[\frac{p_\theta(a_t|s_t)}{p_{\theta'}(a_t|s_t)}\underbrace{\frac{p_\theta(s_t)}{p_{\theta'}(s_t)}} A^{\theta'}(s_t,a_t)\nabla\ln p_\theta(a_t^n|s_t^n)]\\
