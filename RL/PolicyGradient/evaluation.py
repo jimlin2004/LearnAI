@@ -10,4 +10,4 @@ if __name__ == "__main__":
     agent.loadModel("./loadModel/policyGradientModel.pth")
     env.runOneEpisode_evaluation(1000, agent, "evaluation.gif")
     # plt.plot(list(range(1, len(env.history["reward"]) + 1)), env.history["reward"])
-    plt.show()
+    # plt.show()

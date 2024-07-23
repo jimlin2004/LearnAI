@@ -115,12 +115,11 @@ class Model(torch.nn.Module):
 # Agent.py
 import Model
 import torch
-import numpy as np
 
 class Agent:
     def __init__(self, device, stateDim, actionDim):
-        self.lr = 0.01
-        self.gamma = 0.95
+        self.lr = 0.003
+        self.gamma = 0.99
         self.log_probs = []
         self.ep_rewards = []
         self.policy = Model.Model(stateDim, actionDim).to(device)
@@ -134,10 +133,6 @@ class Agent:
         log_prob = distri.log_prob(action)
         self.log_probs.append(log_prob)
         return action.item()
-    def selectAction_evaluation(self, state):
-        self.policy.train(False)
-        actionProb = self.policy(state)
-        return torch.argmax(actionProb).item()
     
     def getDiscountedAndStandardizedRewards(self):
         discountedRewards = [0] * len(self.ep_rewards)
@@ -145,7 +140,7 @@ class Agent:
         for i in range(len(self.ep_rewards) - 1, -1, -1):
             curr = curr * self.gamma + self.ep_rewards[i]
             discountedRewards[i] = curr
-        discountedRewards = torch.FloatTensor(discountedRewards)
+        discountedRewards = torch.tensor(discountedRewards, dtype = torch.float32)
         discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
         return discountedRewards
     
@@ -162,6 +157,7 @@ class Agent:
     
     def save(self, path: str):
         torch.save(self.policy.state_dict(), path)
+
     def loadModel(self, path: str):
         loaded = torch.load(path)
         self.policy.load_state_dict(loaded)
@@ -183,17 +179,17 @@ def selectAction(self, state):
 
 ```py
 def getDiscountedAndStandardizedRewards(self):
-    discountedRewards = [0] * len(self.ep_rewards)
-    curr = 0
-    for i in range(len(self.ep_rewards) - 1, -1, -1):
-        curr = curr * self.gamma + self.ep_rewards[i]
-        discountedRewards[i] = curr
-    discountedRewards = torch.FloatTensor(discountedRewards)
-    discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
-    return discountedRewards
+        discountedRewards = [0] * len(self.ep_rewards)
+        curr = 0
+        for i in range(len(self.ep_rewards) - 1, -1, -1):
+            curr = curr * self.gamma + self.ep_rewards[i]
+            discountedRewards[i] = curr
+        discountedRewards = torch.tensor(discountedRewards, dtype = torch.float32)
+        discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
+        return discountedRewards
 ```
 
-這一步是在一次episode結束之後要計算該次episode每個時間點的reward，而隨著時間的推進，離現在越遠的reward的影響應該要降低，所以記得倒著迭代episode的reward，因為最新的reward在最後面，用$\gamma$做discount($\gamma$可設0.99或0.95之類接近1的數)，最後將discounted reward減去一半(當作baseline)。
+這一步是在一次episode結束之後要計算該次episode每個時間點的reward，而隨著時間的推進，離現在越遠的reward的影響應該要降低，用$\gamma$做discount($\gamma$可設0.99或0.95之類接近1的數)，最後將discounted reward減去一半(當作baseline)。
 
 ```py
 def train(self, discountedAndStandardizedRewards: torch.Tensor):
@@ -254,9 +250,9 @@ class Env:
         agent.log_probs.clear()
         while (not done):
             # self.env.render()
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            state = torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(self.device)
             action = agent.selectAction(state)
-            state_next, reward, done, truncated, info = self.env.step(action)
+            nextState, reward, done, truncated, info = self.env.step(action)
             totalReward += reward
             agent.ep_rewards.append(reward)
             
@@ -264,7 +260,7 @@ class Env:
                 break
             if (totalReward >= maxScoreLimit):
                 break
-            state = state_next
+            state = nextState
         discountedAndStandardizedRewards = agent.getDiscountedAndStandardizedRewards()
         loss = agent.train(discountedAndStandardizedRewards)
         self.history["reward"].append(totalReward)
@@ -278,15 +274,15 @@ class Env:
         frames = []
         while (not done):
             frames.append(self.env.render())
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-            action = agent.selectAction_evaluation(state)
-            state_next, reward, done, truncated, info = self.env.step(action)
+            state = torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(self.device)
+            action = agent.selectAction(state)
+            nextState, reward, done, truncated, info = self.env.step(action)
             totalReward += reward
             if (done):
                 break
             if (totalReward >= maxScoreLimit):
                 break
-            state = state_next
+            state = nextState
         saveFramesToGif(frames, gifPath)
         return totalReward
         
@@ -315,6 +311,7 @@ class Env:
     @property
     def actionDim(self):
         return self.env.action_space.n
+
     @property
     def stateDim(self):
         return self.env.observation_space.shape[0]
@@ -343,10 +340,8 @@ if __name__ == "__main__":
 
 ### 實驗結果
 
-episode = 500
-![reward 500次](./reward_500次.svg)
 episode = 1000
-![reward 1000次](./reward_1000次.svg)
-可以觀察到policy gradient的訓練方法有學習，可以達到最高設定的1000分，而訓練過程中也能發現到即使已經保持在1000分一段時間卻會發生突然下降的情況，代表著訓練不太穩定，但以趨勢來看reward是呈現上升。
-![驗證](./1000次實驗結果.gif)
+![reward 1000次](./reward_1000.svg)
+可以觀察到policy gradient的訓練方法有學習，可以達到最高設定的1000分，而訓練過程中也能發現到即使已經保持在1000分一段時間卻會發生突然下降的情況，代表著訓練不太穩定，也可能是由於select action是以distribution sample的方式帶有隨機，但以趨勢來看reward是呈現上升。
+![驗證](./evaluation_1000.gif)
 這是訓練1000個episode的model實際的遊玩過程，可以發現到NN已經學會如何穩定住火柴，也學會如何利用移動來解決傾角變大的情況。

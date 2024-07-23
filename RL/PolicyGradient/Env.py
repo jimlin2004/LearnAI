@@ -32,9 +32,9 @@ class Env:
         agent.log_probs.clear()
         while (not done):
             # self.env.render()
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+            state = torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(self.device)
             action = agent.selectAction(state)
-            state_next, reward, done, truncated, info = self.env.step(action)
+            nextState, reward, done, truncated, info = self.env.step(action)
             totalReward += reward
             agent.ep_rewards.append(reward)
             
@@ -42,7 +42,7 @@ class Env:
                 break
             if (totalReward >= maxScoreLimit):
                 break
-            state = state_next
+            state = nextState
         discountedAndStandardizedRewards = agent.getDiscountedAndStandardizedRewards()
         loss = agent.train(discountedAndStandardizedRewards)
         self.history["reward"].append(totalReward)
@@ -56,15 +56,15 @@ class Env:
         frames = []
         while (not done):
             frames.append(self.env.render())
-            state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
-            action = agent.selectAction_evaluation(state)
-            state_next, reward, done, truncated, info = self.env.step(action)
+            state = torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(self.device)
+            action = agent.selectAction(state)
+            nextState, reward, done, truncated, info = self.env.step(action)
             totalReward += reward
             if (done):
                 break
             if (totalReward >= maxScoreLimit):
                 break
-            state = state_next
+            state = nextState
         saveFramesToGif(frames, gifPath)
         return totalReward
         

@@ -1,11 +1,10 @@
 import Model
 import torch
-import numpy as np
 
 class Agent:
     def __init__(self, device, stateDim, actionDim):
-        self.lr = 0.01
-        self.gamma = 0.95
+        self.lr = 0.003
+        self.gamma = 0.99
         self.log_probs = []
         self.ep_rewards = []
         self.policy = Model.Model(stateDim, actionDim).to(device)
@@ -19,10 +18,6 @@ class Agent:
         log_prob = distri.log_prob(action)
         self.log_probs.append(log_prob)
         return action.item()
-    def selectAction_evaluation(self, state):
-        self.policy.train(False)
-        actionProb = self.policy(state)
-        return torch.argmax(actionProb).item()
     
     def getDiscountedAndStandardizedRewards(self):
         discountedRewards = [0] * len(self.ep_rewards)
@@ -30,7 +25,7 @@ class Agent:
         for i in range(len(self.ep_rewards) - 1, -1, -1):
             curr = curr * self.gamma + self.ep_rewards[i]
             discountedRewards[i] = curr
-        discountedRewards = torch.FloatTensor(discountedRewards)
+        discountedRewards = torch.tensor(discountedRewards, dtype = torch.float32)
         # discountedRewards = (discountedRewards - discountedRewards.mean()) / (discountedRewards.std() + 1e-9)
         discountedRewards = discountedRewards - discountedRewards.mean() #減掉baseline
         return discountedRewards
