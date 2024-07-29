@@ -1,0 +1,38 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/24.7.5 Chrome/126.0.6478.183 Electron/31.3.0 Safari/537.36" version="24.7.5">
+  <diagram name="第 1 页" id="8uw9EdbJ2zEHSguLSQQN">
+    <mxGraphModel dx="763" dy="887" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="583" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="RW7uldUvipwezeCFaMFb-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="RW7uldUvipwezeCFaMFb-1" target="RW7uldUvipwezeCFaMFb-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-4" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;TD or MC&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="RW7uldUvipwezeCFaMFb-3">
+          <mxGeometry x="0.3051" y="-1" relative="1" as="geometry">
+            <mxPoint x="1" y="15" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-1" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;利用policy π與environment互動&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="364" y="80" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="RW7uldUvipwezeCFaMFb-2" target="RW7uldUvipwezeCFaMFb-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-2" value="學習訓練預測Q&lt;sup style=&quot;font-size: 24px;&quot;&gt;π&lt;/sup&gt;&lt;span style=&quot;font-size: 24px;&quot;&gt;(s, a)&lt;/span&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=24;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="540" y="230" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="RW7uldUvipwezeCFaMFb-5" target="RW7uldUvipwezeCFaMFb-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-8" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;π = π&#39;&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="RW7uldUvipwezeCFaMFb-7">
+          <mxGeometry x="-0.3533" relative="1" as="geometry">
+            <mxPoint y="9" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="RW7uldUvipwezeCFaMFb-5" value="&lt;font style=&quot;font-size: 24px;&quot;&gt;利用Q&lt;sup style=&quot;&quot;&gt;π&lt;/sup&gt;(s, a)找到更好的policy π&#39;&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="190" y="230" width="200" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
