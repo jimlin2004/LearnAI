@@ -28,6 +28,12 @@ class DQN:
         else:
             action = np.random.randint(0, self.actionDim)
         return action
+    
+    def selectAction_evaulate(self, state):
+        self.Q.train(False)
+        action_Q = self.Q(state)
+        action = torch.argmax(action_Q).item()
+        return action
 
     def updateEpsilon(self):
         self.epsilon = max(self.epsilon * ARG.epsilonDecay, ARG.endEpsilon)
@@ -62,3 +68,7 @@ class DQN:
     
     def save(self):
         torch.save(self.Q.state_dict(), "./DQN.pth")
+    
+    def load(self, path: str):
+        loaded = torch.load(path)
+        self.Q.load_state_dict(loaded)

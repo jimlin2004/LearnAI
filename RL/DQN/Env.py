@@ -73,7 +73,7 @@ class Env:
             currTimesteps += 1
             frames.append(self.env.render())
             state = torch.tensor(state, dtype = torch.float).unsqueeze(0).to(self.device)
-            action, _ = agent.selectAction(state)
+            action = agent.selectAction_evaulate(state)
             nextState, reward, done, _, _ = self.env.step(action)
             if (done):
                 break
