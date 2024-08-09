@@ -4,7 +4,6 @@ import ARG
 from ReplayBuffer import RelplayBuffer
 import numpy as np
 
-
 class DQN:
     def __init__(self, stateDim, actionDim, device):
         self.Q = QNN(stateDim, actionDim).to(device)
