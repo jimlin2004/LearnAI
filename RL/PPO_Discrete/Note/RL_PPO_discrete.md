@@ -21,8 +21,8 @@ $$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(R(\tau^n
 圖片取自 李宏毅老師 [網址](https://youtu.be/z95ZYgPgXOY?si=zDhOVHHkJVnL1_1n)
 一種解決方法是指乘上從這個pair之後的分數，因為從這個pair後的分數才純粹受到此pair的影響，在這個pair之前的影響就不被考慮，就像左邊的例子，過程中+5分並沒有($s_b$, $a_2$)的功勞，它真正有參與到的只有-2分，所以要將公式改為:
 $$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{R(\tau^n)} - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$括起來的部分要改成
-$$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{\sum_{t' = 1}^{T_n}r^n_{t'}} - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$然後會加入discount($\gamma < 1$)以減少未來的影響性:
-$$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{\sum_{t' = 1}^{T_n}\gamma^{t'-t} r^n_{t'}} - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$
+$$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{\sum_{t' = t}^{T_n}r^n_{t'}} - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$然後會加入discount($\gamma < 1$)以減少未來的影響性:
+$$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{\sum_{t' = t}^{T_n}\gamma^{t'-t} r^n_{t'}} - b)\nabla\ln(p_\theta(a_t^n|s_t^n))$$
 但是實作上因為$b$很複雜，所以會用NN來決定:
 $$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}(\underbrace{\sum_{t' = 1}^{T_n}\gamma^{t'-t} r^n_{t'} - b})\nabla\ln(p_\theta(a_t^n|s_t^n))$$變
 $$\nabla \bar{R}_\theta = \frac{1}{N}\sum_{n = 1}^{N}\sum_{t = 1}^{T_n}\underbrace{A^\theta(s_t,a_t)}\nabla\ln(p_\theta(a_t^n|s_t^n))$$稱作"Advantage Function"，其意義是看到$s_t$後採取$a_t$這個action相較於其他action有多好，這是"Critic"的想法(以後AC才會介紹)。
