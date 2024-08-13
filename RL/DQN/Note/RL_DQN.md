@@ -153,7 +153,7 @@ table不行就用function逼近，function不好算，自然想到用NN學習收
 
 #### Target NN
 
-上面的TD error有提到$Q^\pi(s_t,a_t) \leftrightarrow r_t + Q^\pi(s_{t+1}, \pi(s_{t+1}))$，其中$Q^\pi(s_t, a_t)$是QNN輸出的prediction，$r_t + Q^\pi(s_{t+1}, \pi(s_{t+1}))$是回歸預測的target，目標是希望prediction - target $=Q^\pi(s_t,a_t) - Q^\pi(s_{t+1}, \pi(s_{t+1})) \leftrightarrow r_t $越接近$r_t$越好，然而可以注意到prediction與target共用一個NN，這代表當NN在學習預測時target也一起在變動，prediction變target也跟著變，在實作上將導致收斂不穩定。
+上面的TD error有提到$Q^\pi(s_t,a_t) \leftrightarrow r_t + Q^\pi(s_{t+1}, \pi(s_{t+1}))$，其中$Q^\pi(s_t, a_t)$是QNN輸出的prediction，$r_t + Q^\pi(s_{t+1}, \pi(s_{t+1}))$是回歸預測的target，目標是希望prediction - target $=Q^\pi(s_t,a_t) - Q^\pi(s_{t+1}, \pi(s_{t+1})) \leftrightarrow r_t$越接近$r_t$越好，然而可以注意到prediction與target共用一個NN，這代表當NN在學習預測時target也一起在變動，prediction變target也跟著變，在實作上將導致收斂不穩定。
 解決辦法是多一個QNN稱作$Q_{target}$，將$Q_{target}$凍結權重，如此$r_t + Q^\pi(s_{t+1}, \pi(s_{t+1}))$就會固定下來。
 實作上$Q_{target}$會初始化成原本QNN $Q$的copy，之後每隔一段時間將$Q$的權重copy到$Q_{target}$。
 因此DQN轉變成訓練$Q$去預測$Q_{target} + r$，最小化MSE error，即regression problem。
