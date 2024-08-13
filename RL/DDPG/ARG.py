@@ -1,5 +1,8 @@
 Gamma = 0.99
-GaussianNoiseSigma = 0.01 # gaussian noise 的標準差
+GaussianNoiseSigma = 0.2 # gaussian noise 的標準差
+GaussianNoiseSigmaDecay = 0.99
+GaussianNoiseSigma_min = 0.005
+
 Tau = 0.005 # soft update 係數
 
 Actor_lr = 3e-4
@@ -11,4 +14,4 @@ BatchSize = 256
 
 # 在正式開始前需要先經過多少timestep
 initReplayBufferSize = 1000
-MemoryCapacity = 1000000
+MemoryCapacity = 100000

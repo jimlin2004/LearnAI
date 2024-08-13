@@ -14,6 +14,6 @@ class ActorNN(th.nn.Module):
         out = self.relu1(out)
         out = self.l2(out)
         # tanh是為了將輸出縮放到[-1, 1]之間，
-        # 乘上bound可說放到遊戲的action範圍 -> [-bound, bound]
+        # 乘上bound可縮放到遊戲的action範圍 -> [-bound, bound]
         out = self.bound * self.tanh1(out)
         return out

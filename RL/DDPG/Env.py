@@ -56,7 +56,7 @@ class Env:
             self.logger.history["timestep"].append(self.trainTimestep)
             self.logger.history["actor loss"].append(ep_actorLoss / ep_train_timestep)
             self.logger.history["critic loss"].append(ep_criticLoss / ep_train_timestep)
-            print("| Episode reward: %10.4f | Actor loss: %10.4f | Critic loss: %10.4f |" % (ep_return, ep_actorLoss / ep_train_timestep, ep_criticLoss / ep_train_timestep))
+            print("| Episode reward: %10.4f | Actor loss: %10.4f | Critic loss: %10.4f | normal sigma: %6f |" % (ep_return, ep_actorLoss / ep_train_timestep, ep_criticLoss / ep_train_timestep, agent.normalNoise.sigma))
         return ep_train_timestep
 
     def train(self, agent: DDPG, totalTimesteps: int):
@@ -64,18 +64,19 @@ class Env:
         while (currTimesteps < totalTimesteps):
             print("[INFO] CurrTimesteps: %8d" % (currTimesteps))
             currTimesteps += self.runOneEpisode(agent)
+            agent.normalNoise.sigma = max(ARG.GaussianNoiseSigmaDecay * agent.normalNoise.sigma, ARG.GaussianNoiseSigma_min)
         self.env.close()
         self.logger.saveHistory()
 
-    def runOneEpisode_evaluate(self, agent: DDPG, maxTimestep):
+    def runOneEpisode_evaluate(self, agent: DDPG, maxTimestep, frames: list):
         state = self.env.reset()[0]
         ep_return = 0
         ep_t = 1
         for ep_t in range(1, maxTimestep + 1):
-            self.env.render()
+            frames.append(self.env.render())
             stateTensor = torch.tensor(state, dtype = torch.float32).unsqueeze(0).to(self.device)
-            action = agent.selectAction(stateTensor)
-            nextState, reward, done, _, _ = self.env.step(action)
+            action = agent.actor(stateTensor).item()
+            nextState, reward, done, _, _ = self.env.step([action])
             ep_return += reward
             agent.storeTransition(state, action, nextState, reward, done)
             state = nextState
@@ -84,14 +85,17 @@ class Env:
             if (ep_t == maxTimestep):
                 break
         print("| Episode reward: %10.4f |" % (ep_return))
+        
         return ep_return, ep_t
 
     def evaluate(self, agent: DDPG, iterNum: int):
         agent.actor.train(False)
         agent.critic.train(False)
+        frames = []
         for episode in range(1, iterNum + 1):
             print("Episode: %8d" % (episode))
-            ep_return, ep_t = self.runOneEpisode_evaluate(agent, 200)
+            ep_return, ep_t = self.runOneEpisode_evaluate(agent, 200, frames)
+        saveFramesToGif(frames, "./evaluate.gif")
         self.env.close()
 
     @property

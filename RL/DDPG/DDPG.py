@@ -4,11 +4,15 @@ import ARG
 from ActorNN import ActorNN
 from CriticNN import CriticNN
 from ReplayBuffer import RelplayBuffer
+from NormalNoise import NormalNoise
 
 class DDPG:
     def __init__(self, n_state, n_action, bound, device):
         self.n_action = n_action
         self.device = device
+        self.bound = bound
+        
+        self.normalNoise = NormalNoise(np.zeros(n_action), ARG.GaussianNoiseSigma * np.ones(n_action))
         
         self.replayBuffer = RelplayBuffer(n_state, ARG.BatchSize, ARG.MemoryCapacity)
         self.actor = ActorNN(n_state, n_action, bound).to(device)
@@ -25,7 +29,7 @@ class DDPG:
         self.mse = th.nn.MSELoss()
     def selectAction(self, state):
         action = self.actor(state).item()
-        action = action + ARG.GaussianNoiseSigma * np.random.randn(self.n_action)
+        action = np.clip(action + self.normalNoise(), -self.bound, self.bound)
         return action
     def storeTransition(self, s, a, ns, r, d):
         self.replayBuffer.push(s, a, ns, r, d)

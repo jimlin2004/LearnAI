@@ -7,7 +7,7 @@ import random
 if __name__ == "__main__":
     device = th.device("cuda:0" if th.cuda.is_available() else "cpu")
     
-    env = Env(device, "Pendulum-v1", "human")
+    env = Env(device, "Pendulum-v1", "rgb_array")
     agent = DDPG(env.n_state, env.n_action, 2, device)
-    agent.load("./20240809_lr0_0003/Actor.pth", "./20240809_lr0_0003/Critic.pth")
-    env.evaluate(agent, 100)
+    agent.load("./loadModel/Actor.pth", "./loadModel/Critic.pth")
+    env.evaluate(agent, 5)
